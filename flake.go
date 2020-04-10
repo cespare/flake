@@ -26,7 +26,7 @@ import (
 func main() {
 	log.SetFlags(0)
 
-	useTmpdir := flag.Bool("tmpdir", false, "Create a tmpdir for each run ($FLAKEDIR)")
+	tmpdir := flag.String("tmpdir", "", "Create a tmpdir here for each run ($FLAKEDIR)")
 	parallelism := flag.Int("p", runtime.GOMAXPROCS(0), "Run this many processes in parallel")
 	flag.Usage = usage
 	flag.Parse()
@@ -39,14 +39,13 @@ func main() {
 		os.Exit(2)
 	}
 
-	var tmpdir string
-	if *useTmpdir {
+	if *tmpdir != "" {
 		var err error
-		tmpdir, err = ioutil.TempDir("", "flake-")
+		*tmpdir, err = ioutil.TempDir(*tmpdir, "flake-")
 		if err != nil {
 			log.Fatalln("Cannot create tmpdir:", err)
 		}
-		defer os.RemoveAll(tmpdir)
+		defer os.RemoveAll(*tmpdir)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,7 +55,7 @@ func main() {
 	for i := 0; i < *parallelism; i++ {
 		w := &worker{
 			cmd:    flag.Args(),
-			tmpdir: tmpdir,
+			tmpdir: *tmpdir,
 		}
 		wg.Add(1)
 		go func() {
@@ -156,7 +155,7 @@ func (w *worker) run(ctx context.Context, id int64) error {
 		if err := os.Mkdir(tmpdir, 0755); err != nil {
 			return err
 		}
-		defer os.Remove(tmpdir)
+		defer os.RemoveAll(tmpdir)
 		cmd.Env = append(os.Environ(), fmt.Sprintf("FLAKEDIR=%s", tmpdir))
 	}
 	err := cmd.Run()
