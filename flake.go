@@ -79,7 +79,7 @@ func main() {
 			}
 		}()
 	}
-	sigs := make(chan os.Signal)
+	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGINT, unix.SIGTERM)
 	ticker := time.NewTicker(time.Second)
 	var n int64
