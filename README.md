@@ -1,5 +1,4 @@
 # flake
 
-Flake is a tool to find test flakes. Run `flake -h` for usage.
-
-TODO: document more
+Flake is a tool to find test flakes. It runs commands repeatedly until failure.
+Run `flake -h` for usage instructions.
