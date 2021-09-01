@@ -21,7 +21,14 @@ import (
 	"time"
 
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
+
+var stdoutIsTTY bool
+
+func init() {
+	stdoutIsTTY = term.IsTerminal(int(os.Stdout.Fd()))
+}
 
 func main() {
 	log.SetFlags(0)
