@@ -153,7 +153,7 @@ func (re *runError) Error() string {
 }
 
 func (w *worker) run(ctx context.Context, id int64) error {
-	cmd := exec.CommandContext(ctx, w.cmd[0], w.cmd[1:]...)
+	cmd := commandContext(ctx, w.cmd[0], w.cmd[1:]...)
 	w.outBuf.Reset()
 	cmd.Stdout = &w.outBuf
 	cmd.Stderr = &w.outBuf
