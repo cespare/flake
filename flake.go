@@ -1,5 +1,5 @@
-// Flake a tool for finding test flakes by running a given program or script
-// until it fails (by exiting with nonzero status).
+// Flake is a tool for finding test flakes by running a given program or script
+// until it fails.
 package main
 
 import (
@@ -7,13 +7,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -48,7 +48,7 @@ func main() {
 
 	if *tmpdir != "" {
 		var err error
-		*tmpdir, err = ioutil.TempDir(*tmpdir, "flake-")
+		*tmpdir, err = os.MkdirTemp(*tmpdir, "flake-")
 		if err != nil {
 			log.Fatalln("Cannot create tmpdir:", err)
 		}
@@ -159,17 +159,17 @@ func (w *worker) run(ctx context.Context, id int64) error {
 	cmd.Stderr = &w.outBuf
 	if w.tmpdir != "" {
 		tmpdir := filepath.Join(w.tmpdir, strconv.FormatInt(id, 10))
-		if err := os.Mkdir(tmpdir, 0755); err != nil {
+		if err := os.Mkdir(tmpdir, 0o755); err != nil {
 			return err
 		}
 		defer os.RemoveAll(tmpdir)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("FLAKEDIR=%s", tmpdir))
+		cmd.Env = append(cmd.Environ(), fmt.Sprintf("FLAKEDIR=%s", tmpdir))
 	}
 	err := cmd.Run()
 	if ee, ok := err.(*exec.ExitError); ok {
 		return &runError{
 			state:  ee.ProcessState,
-			output: append([]byte(nil), w.outBuf.Bytes()...),
+			output: slices.Clone(w.outBuf.Bytes()),
 		}
 	}
 	return err
@@ -178,7 +178,7 @@ func (w *worker) run(ctx context.Context, id int64) error {
 func usage() {
 	fmt.Fprint(os.Stderr, `usage:
 
-  flake [flags] command [args...]
+  flake [flags...] <command> [args...]
 
 where the flags are:
 
